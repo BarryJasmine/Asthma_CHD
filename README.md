@@ -1,2 +1,2 @@
 # Asthma_CHD
-MR of asthma on CHD in East Asians
+Mendelian randomization study of asthma on CHD in East Asians
