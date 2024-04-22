@@ -31,6 +31,11 @@ Asthma <- Asthma[Asthma$rsid%in%retained_snps$rsid, ]
 ### Exclude SNPs with minor allele frequency <0.01 ###
 Asthma <- Asthma[(Asthma$all_meta_AF>0.01)&(Asthma$all_meta_AF<0.99), ]
 
+### Estimate the F-statistics (PMID:30861319)
+### Exclude SNPs with F-statistics<10
+Asthma$F_stat <- (Asthma$inv_var_meta_beta/Asthma$inv_var_meta_sebeta)^2
+Asthma <- Asthma[Asthma$F_stat>10, ]
+
 write.csv(Asthma, 'Asthma_IVs_multiple_biobank.csv', quote = F, row.names = F)
 
 Asthma <- read.csv('Asthma_IVs_multiple_biobank.csv', header = T, stringsAsFactors = F)
