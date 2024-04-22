@@ -11,13 +11,15 @@ library(SNPlocs.Hsapiens.dbSNP144.GRCh38)
 library(BSgenome.Hsapiens.1000genomes.hs37d5)
 library(BSgenome.Hsapiens.NCBI.GRCh38)
 
+### multi-biobank East Asian GWAS of Asthma (PMID:36778051)
+### download the dataset: https://www.globalbiobankmeta.org/resources , click on the 'Google Sheets' hyperlink in the website
 
-##### Asthma meta-analysis instrumental variables #####
-
+### read GWAS of asthma
 Asthma <- read.table(gzfile("Asthma_Bothsex_eas_inv_var_meta_GBMI_052021_nbbkgt1.txt.gz"), sep='\t', header = F)
 Asthma <- Asthma[,-c(14:17)]
 colnames(Asthma) <- c('CHR', 'POS', 'REF', 'ALT', 'rsid', 'all_meta_AF', 'inv_var_meta_beta', 'inv_var_meta_sebeta',
               'inv_var_meta_p', 'inv_var_het_p', 'direction', 'N_case', 'N_ctrl')
+### selection of instrumental variables ###
 Asthma <- Asthma[Asthma$inv_var_meta_p<5e-8, ]
 
 ### clumping ###
@@ -40,22 +42,24 @@ Asthma$samplesize.exposure <- 322655
 add_rsq(Asthma)
 
 ### mean F-statistics ###
-
 mean((Asthma$beta.exposure)^2/(Asthma$se.exposure)^2)
 
 #### BBJ CAD Outcome ####
+### bbj-a-159 was derived from openGWAS platform
 BBJ_CAD <- extract_outcome_data(snps=Asthma$SNP, outcomes = 'bbj-a-159', proxies = T)
 Asthma.BBJ_CAD <- harmonise_data(Asthma, BBJ_CAD)
 write.csv(Asthma.BBJ_CAD, 'Asthma_to_BBJ_CAD.csv', quote = F, row.names = F)
 
 Asthma.BBJ_CAD <- read.csv('Asthma_to_BBJ_CAD.csv', header = T, stringsAsFactors = F)
 ivw_res.BBJ_CAD <- mr(Asthma.BBJ_CAD, method_list = c('mr_ivw'))
+#### To better interpret the result, we multiplied the causal estimate by 0.693 to reflect 
+#### the increase in the risk of CHD associated with each doubling of the odds of genetic predisposition to asthma
 ivw_res.BBJ_CAD$b <- 0.693*ivw_res.BBJ_CAD$b
 ivw_res.BBJ_CAD$se <- 0.693*ivw_res.BBJ_CAD$se
 generate_odds_ratios(ivw_res.BBJ_CAD)
 
 #### UKB East Asian CAD Outcome ####
-
+## UKB East Asian CAD dataset was downloaded from https://osf.io/preprints/osf/47kys
 UKB_CAD <- read.table(gzfile("EA_cad.txt.gz"), sep=',', header = T)
 UKB_CAD <- UKB_CAD[UKB_CAD$ID%in%Asthma$SNP, ]
 UKB_CAD$BETA <- log(UKB_CAD$OR)
@@ -72,7 +76,7 @@ ivw_res.UKB_CAD$se <- 0.693*ivw_res.UKB_CAD$se
 generate_odds_ratios(ivw_res.UKB_CAD)
 
 
-#### ivw-meta estimates ####
+#### ivw meta-analysis estimates ####
 beta <- c(ivw_res.BBJ_CAD$b, ivw_res.UKB_CAD$b)
 se <- c(ivw_res.BBJ_CAD$se, ivw_res.UKB_CAD$se)
 dat <- data.frame(ids=c('BBJ', 'UKB'), beta=beta, se=se)
@@ -84,7 +88,7 @@ metagen(data=dat, TE=beta, seTE=se, overall=T, sm='OR', random = F)
 
 
 ##### BBJ CAD data processing ####
-
+##### BBJ CAD GWAS data was downloaded from http://jenger.riken.jp/en/result
 BBJ_CAD <- read.table(gzfile("CAD.auto.rsq07.mac10.txt.gz"), sep=' ', header = T)
 BBJ_CAD <- BBJ_CAD[,-c(3,6,13,14,15,16,17,18,19,20)]
 write.table(BBJ_CAD, 'CAD_GWAS_BBJ.txt', quote=F, row.names = F)
